@@ -1,6 +1,6 @@
 #Wen and Hedrick, in review
 #High Field Pivotal Temperature of Olive Ridley Sea Turtles (Lepidochelys olivacea) 
-#Last modified Nov 19 2024 BPH
+#Last modified Aug 22 2025 BPH
 
 library(car) #v 3.1-2
 library(embryogrowth) #v 9.1
@@ -30,7 +30,7 @@ pie(rep(1, 5), col = colorBlindBlack5)
 
 
 #Set working directory
-setwd("~/Desktop/Current Projects/Florence-MS/FlorenceRCode/FinalRCode") #Brandon
+setwd("~/Desktop/Current Projects/Florence-MS/FlorenceRCode/FinalRCode/Revised") #Brandon
 
 #Look at nest variability across the day
 
@@ -201,7 +201,7 @@ text(200, 34.9, "E: (60cm, 80% Shade)", col = "#CC79A7", cex = 1.5, pos = 4)
 #Load data for figure 3 and for analyses
 tempData <- read.csv("MeanTempTSP.csv")
       tempData$Treatment <- as.factor(tempData$Treatment)
-turtData <- read.csv("TurtData.csv")
+turtData <- read.csv("TurtDataREV.csv")
       turtData$Treatment <- as.factor(turtData$Treatment)
 massData <- read.csv("Mass.csv")
       massData$Treatment <- as.factor(massData$Treatment)
@@ -227,7 +227,16 @@ tempBox <- ggplot(tempData) +
   scale_color_manual(values=c("blue", "red")) +
   scale_fill_manual(values = c("#D55E00", "#56B4E9", "#0072B2", "#009E73", "#CC79A7")) +
   theme_classic() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  ylim(c(29.5, 37.2)) +
+  geom_bracket(
+    xmin = c("A", "A", "A", "A", "B"),
+    xmax = c("B", "C", "D", "E", "E"),
+    label = c("***", "***", "***", "***", "*"),
+    tip.length = 0.01,
+    size = 0.5,
+    label.size = 5,
+    y.position = c(35.4, 35.7, 36, 36.3, 36.6))
 
 tempBox
 
@@ -244,7 +253,7 @@ summary(glht(meanTSPANOVA2, linfct = mcp(Treatment = "Tukey")))
 #Plot incubation time by mean temp (Fig 3b)
 incubTemp <- ggplot(turtData, aes(x = DailyMeanTempTSP, y = IncubationDur)) +            
   geom_point(aes(size = 2, col = Treatment)) +
-  xlab("Mean Daily Temperature (Cº)") +
+  xlab("Mean Daily Temperature During TSP (Cº)") +
   ylab("Incubation Duration") +
   theme_classic() +
   theme(legend.position = "none") +
@@ -270,14 +279,23 @@ hatchrate <- ggbarplot(turtData, x = "Treatment", y = "HatchingRate",
                        color = "black",
                        add = c("mean_se"),
                        xlab = FALSE,
-                       ylab = "Hatch Rate",
+                       ylab = "Hatching Success",
                        palette =  c("#D55E00", 
                                     "#56B4E9", 
                                     "#0072B2", 
                                     "#009E73", 
                                     "#CC79A7"))
 
-hatchrate <- hatchrate + theme(legend.position = "none")
+hatchrate <- hatchrate + theme(legend.position = "none") +
+  ylim(c(0, 105)) +
+  geom_bracket(
+    xmin = c("A", "D"),
+    xmax = c("E", "E"),
+    label = c("*", "*"),
+    tip.length = 0.01,
+    size = 0.5,
+    label.size = 5,
+    y.position = c(98, 100))
 
 hatchrate
 
@@ -292,20 +310,28 @@ summary(hatchingANOVA2)
 
 summary(glht(hatchingANOVA2, linfct = mcp(Treatment = "Tukey")))
 
-#Compare mass across treatments (Fig 3d)
-violinMass <- ggplot(massData, aes(x = Carapace.Area, y = Treatment, fill = Treatment)) +
+#Compare carapace area across treatments (Fig 3d)
+violinMass <- ggplot(massData, aes(x = Treatment, y = Carapace.Area)) +
   geom_violin(trim = FALSE) +
-  coord_flip() +
-  xlab(expression("Carapace Area (mm" ^ 2 *")")) +
-  ylab("") +
-  geom_boxplot(width = 0.2, fill = "white") +
   theme_classic() +
-  theme(legend.position = "none") 
+  theme(legend.position = "none") +
+  geom_boxplot(width = 0.2, fill = "white") +
+  ylab(expression("Carapace Area (mm" ^ 2 *")")) +
+  xlab("") +
+  ylim(c(750, 2050))
 
-violinMass <- violinMass + scale_fill_manual(values = c("#D55E00", "#56B4E9", "#0072B2", "#009E73", "#CC79A7"))
+violinMass <- violinMass +  
+  geom_bracket(
+    xmin = c("A", "A"),
+    xmax = c("C", "D"),
+    label = c("***", "*"),
+    tip.length = 0.01,
+    size = 0.5,
+    label.size = 5,
+    y.position = c(1900, 1950))
 
-#Error refers to a single NA
 violinMass
+
 
 #Does hatch rate differ by treatment? 
 #Including clutch as a random factor
@@ -336,11 +362,40 @@ plot_grid(tempBox, hatchrate, incubTemp, violinMass, labels=c("a", "c", "b", "d"
 
 
 
+##Additional assessment of mass to include yolk size
+#Compare mass across treatments (Fig 3d)
+violinMass2 <- ggplot(massData, aes(x = Mass, y = Treatment, fill = Treatment)) +
+  geom_violin(trim = FALSE) +
+  coord_flip() +
+  xlab(expression("Mass (g)")) +
+  ylab("") +
+  geom_boxplot(width = 0.2, fill = "white") +
+  theme_classic() +
+  theme(legend.position = "none") 
+
+violinMass2 <- violinMass2 + scale_fill_manual(values = c("#D55E00", "#56B4E9", "#0072B2", "#009E73", "#CC79A7"))
+
+violinMass2
+
+#Does hatch rate differ by treatment? 
+#Including clutch as a random factor
+massANOVA2 <- lme(Mass ~ Treatment, 
+                      random= ~1|Nest, 
+                      method="ML", 
+                      data = massData) 
+
+summary(massANOVA2)
+
+summary(glht(massANOVA2, linfct = mcp(Treatment = "Tukey")))
+
+
+
+
 
 ####Figure 4####
 
 #Load in data
-data2 <- read.csv("NewFloData.csv")
+data2 <- read.csv("NewFloDataREV.csv")
 
 #Run TSD models and select for best model fit
 
